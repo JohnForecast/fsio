@@ -1881,9 +1881,15 @@ static int rt11Mount(
             }
 
             printf("%s%o:\n", mount->name, i);
-            if (version != NULL)
-              printf("  Version: %s,        System ID: %12s\n",
-                     version, (char *)&data->buf[RT11_HB_SYSID]);
+            if (version != NULL) {
+	      char sysid[16];
+
+	      memset(sysid, 0, sizeof(sysid));
+	      strncpy(sysid, (char *)&data->buf[RT11_HB_SYSID],
+		       strlen(RT11_SYSID));
+
+              printf("  Version: %s,        System ID: %s\n", version, sysid);
+	    }
             printf("  Total blocks: %5d, Free blocks: %5d\n"
                    "  Directory segments: %2d (Highest in use: %d)\n"
                    "  Extra bytes/directory entry: %d\n",
