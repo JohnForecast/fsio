@@ -2904,6 +2904,12 @@ static void os8CloseFile(
   struct os8OpenFile *file = filep;
 
   if (file->mode == M_WR) {
+    if (SWISSET('a')) {
+      char ch ='\032';
+
+      os8WriteBytes(file, &ch, 1);
+    }
+    
     if (file->current != 0)
       /*
        * Flush the current buffer.
@@ -2951,10 +2957,20 @@ static size_t os8ReadFile(
     char ch;
     size_t count = 0;
 
+    if (file->eof != 0)
+      return 0;
+    
     /*
      * Read a full or partial line from the open file.
      */
     while ((buflen != 0) && (os8ReadBytes(file, &ch, 1) == 1)) {
+      if (ch == '\032') {
+        /*
+         * ^Z indicating EOF
+         */
+        file->eof = 1;
+        break;
+      }
       ch &= 0177;
       bufr[count++] = ch;
       buflen--;

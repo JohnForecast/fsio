@@ -57,3 +57,7 @@ Changes Since Alpha Release:
 - Fixed display of System ID during RT-11 mount if there is non-zero data
   following the System ID on the disk
 
+13-Nov-24
+
+- Fixed OS/8 ASCII file read/write to to handle ^Z marking the end of file
+

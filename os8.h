@@ -217,6 +217,7 @@ struct os8OpenFile {
   uint16_t              wordpos;        /* Current word offset */
   uint8_t               bytepos;        /* Current byte position */
   off_t                 written;        /* # of bytes written to the file */
+  uint8_t               eof;            /* EOF seen on last read */
 };
 
 /*
