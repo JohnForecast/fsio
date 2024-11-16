@@ -2971,11 +2971,17 @@ static size_t os8ReadFile(
         file->eof = 1;
         break;
       }
-      ch &= 0177;
-      bufr[count++] = ch;
-      buflen--;
-      if (ch == '\n')
-        break;
+
+      /*
+       * Ignore NULL bytes in ASCII mode
+       */
+      if (ch != '\0') {
+        ch &= 0177;
+        bufr[count++] = ch;
+        buflen--;
+        if (ch == '\n')
+          break;
+      }
     }
     return count;
   }
