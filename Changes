@@ -61,3 +61,8 @@ Changes Since Alpha Release:
 
 - Fixed OS/8 ASCII file read/write to to handle ^Z marking the end of file
 
+28-Nov-24
+
+- Fixed RT11 scan to find the size of the partition. The old code would
+  incorrectly terminate on an EMPTY marker rather than END-OF-SEGMENT.
+

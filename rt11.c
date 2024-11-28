@@ -1565,7 +1565,7 @@ static int validate(
 
       position += le16toh(data->buf[off + RT11_DI_LENGTH]);
 
-      if ((status & RT11_E_MPTY) != 0)
+      if ((status & RT11_E_EOS) != 0)
         break;
 
       /*
@@ -1882,14 +1882,14 @@ static int rt11Mount(
 
             printf("%s%o:\n", mount->name, i);
             if (version != NULL) {
-	      char sysid[16];
+              char sysid[16];
 
-	      memset(sysid, 0, sizeof(sysid));
-	      strncpy(sysid, (char *)&data->buf[RT11_HB_SYSID],
-		       strlen(RT11_SYSID));
+              memset(sysid, 0, sizeof(sysid));
+              strncpy(sysid, (char *)&data->buf[RT11_HB_SYSID],
+                       strlen(RT11_SYSID));
 
               printf("  Version: %s,        System ID: %s\n", version, sysid);
-	    }
+            }
             printf("  Total blocks: %5d, Free blocks: %5d\n"
                    "  Directory segments: %2d (Highest in use: %d)\n"
                    "  Extra bytes/directory entry: %d\n",
