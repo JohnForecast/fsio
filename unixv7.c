@@ -1570,8 +1570,8 @@ static int validate(
 
           memset(fpack, 0, sizeof(fpack));
           memset(fname, 0, sizeof(fname));
-          strncpy(fpack, sb->s_fpack, sizeof(sb->s_fpack));
-          strncpy(fname, sb->s_fname, sizeof(sb->s_fname));
+          memcpy(fpack, sb->s_fpack, sizeof(sb->s_fpack));
+          memcpy(fname, sb->s_fname, sizeof(sb->s_fname));
           
           printf("Pack name: %6s, File system name: %6s, Total blocks: %u\n",
                  fpack, fname, data->blocks);
