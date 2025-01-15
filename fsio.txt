@@ -89,19 +89,27 @@ Full command syntax:
 
  1. mount
 
-   mount [-dfr] [-t type] dev[:] container type
+   mount [-dfr] [-o nnn] [-t type] dev[:] container type
 
    Make the specified container file available to fsio for I/O.
 
    -d           Generate debug output if fsio is built with the DEBUG symbol
                 defined
+
    -f           Force the mount to happen even if we are unable to completely
                 validate the container file format
+
    -r           If present, the file system is only available for read access
+
+   -o nnn	This is only valid for Unix V7 file systems for specifying
+		the starting offset of a partition within the container
+		file.
 
    -t type      Specify the type of the container file. This is only required
                 for OS/8 file systems where type should be one of "rx01",
-                "rx02" or "rk05".
+                "rx02" or "rk05". It is not required for Unix V7 file systems
+		but, if supplied, allows for an additional integrity check
+		before mounting the file system.
 
    dev[:]       User supplied name to be used for accessing files within the
                 container file. Files within the container are named by using
@@ -128,7 +136,7 @@ Full command syntax:
 
  3. newfs
 
-   newfs [-t type] container type
+   newfs [-b size] [-t type] container type
 
    Create a new container file with an empty file system. The container
    will be a fixed size (depending on file system type) and may not exist
@@ -140,6 +148,9 @@ Full command syntax:
         rt11    MSCP image (32MB, 65535 blocks)
         dosmt   An empty file suitable for use with any magtape controller
         os8     RK05 image (2.5MB, 3248 blocks)
+	unixv7	RK05 image (2.5MB, 4872 blocks)
+
+   -b size	Specify # of blocks for the container (only valid for unixv7)
 
    -t type      Use a different size for the container file. The size used
                 will be file system dependent.
@@ -154,6 +165,14 @@ Full command syntax:
           rk05  RK05 image (3248 blocks)
           rx01  RX01 image (2002 sectors of 128 bytes each)
           rx02  RX02 imgae (2002 sectors of 256 bytes each)
+
+       For unixv7, the following disk types are valid:
+
+	  rk05	RK05 image (4871 blocks)
+	  rl01	RL01 image (5MB, 10240 blocks)
+	  rl02	RL02 image (10MB, 20480 blocks)
+	  rk06	RK06 image (13MB, 27126 blocks)
+	  rk07	RK07 image (26MB, 53790 blocks)
 
    container    The name of the file to create
 
