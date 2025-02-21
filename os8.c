@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 - 2023 John Forecast. All Rights Reserved.
+ * Copyright (C) 2019 - 2025 John Forecast. All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -50,6 +50,9 @@ static int rx01WriteBlock(struct mountedFS *, uint8_t, unsigned int, void *);
 static int rx02BlockPresent(struct mountedFS *, uint8_t, unsigned int);
 static int rx02ReadBlock(struct mountedFS *, uint8_t, unsigned int, void *);
 static int rx02WriteBlock(struct mountedFS *, uint8_t, unsigned int, void *);
+static int sbc6120BlockPresent(struct mountedFS *, uint8_t, unsigned int);
+static int sbc6120ReadBlock(struct mountedFS *, uint8_t, unsigned int, void *);
+static int sbc6120WriteBlock(struct mountedFS *, uint8_t, unsigned int, void *);
 
 /*
  * Floppy interleave tables:
@@ -158,6 +161,11 @@ struct OS8device OS8Devices[] = {
         0, 0, 0, 0, 0, 0, 0 },
        rx02BlockPresent, rx02ReadBlock, rx02WriteBlock },
 
+  { "sbc6120", 0, OS8_6120_PART, 0,
+    { OS8_6120_FSSZ, OS8_6120_FSSZ, OS8_6120_FSSZ, OS8_6120_FSSZ,
+      OS8_6120_FSSZ, OS8_6120_FSSZ, OS8_6120_FSSZ, OS8_6120_FSSZ },
+    sbc6120BlockPresent, sbc6120ReadBlock, sbc6120WriteBlock },
+  
   { NULL, 0, 0,
     0,
     { 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -378,9 +386,9 @@ static int os8UnitValid(
 )
 {
   struct OS8device *device;
-
+  
   if ((device = data->device) != NULL) {
-    if (unit < device->filesys)
+    if (unit < data->devices)
       return (data->valid & (1 << unit)) != 0 ? 1 : 0;
   }
   return 0;
@@ -877,6 +885,128 @@ static int rx02WriteBlock(
 }
 
 /*++
+ *      s b c 6 1 2 0 B l o c k P r e s e n t
+ *
+ *  Check if the specified block is present in the container file.
+ *
+ * Inputs:
+ *
+ *      mount           - pointer to a mounted file system descriptor
+ *      unit            - file system unit number
+ *      block           - logical block # in the range 0 - N
+ *
+ * Outputs:
+ *
+ *      None
+ *
+ * Returns:
+ *
+ *      1 if block is present in the container file, 0 otherwise
+ *
+ --*/
+static int sbc6120BlockPresent(
+  struct mountedFS *mount,
+  uint8_t unit,
+  unsigned int block
+)
+{
+  struct OS8data *data = &mount->os8data;
+  unsigned int base = unit * OS8_6120_PART;
+
+  return data->blocks > (base + block);
+}
+
+/*++
+ *      s b c 6 1 2 0 R e a d B l o c k
+ *
+ *  Read a block from an OS/8 file system on a SBC6120 IDE drive image.
+ *
+ * Inputs:
+ *
+ *      mount           - pointer to a mounted file system descriptor
+ *      unit            - file system unit number
+ *      block           - logical block # in the range 0 - N
+ *      buf             - buffer to receive data
+ *
+ * Outputs:
+ *
+ *      The block will be read into the specified buffer
+ *
+ * Returns:
+ *
+ *      1 if successful, 0 otherwise
+ *
+ --*/
+static int sbc6120ReadBlock(
+  struct mountedFS *mount,
+  uint8_t unit,
+  unsigned int block,
+  void *buf
+)
+{
+  int status = 0;
+  unsigned int base = unit * OS8_6120_PART;
+
+  if (block >= OS8_6120_PART) {
+    ERROR("Attempt to read block (%u) outside file system \"%s%o:\"\n",
+          block, mount->name, unit);
+    return 0;
+  }
+
+  status = FSioReadBlock(mount, base + block, buf);
+
+  if (status == 0)
+    ERROR("I/O error on \"%s%o:\"\n", mount->name, unit);
+
+  return status;
+}
+
+/*++
+ *      s b c 6 1 2 0 W r i t e B l o c k
+ *
+ *  Write a block to an OS/8 file system on an SBC6120 IDE image.
+ *
+ * Inputs:
+ *
+ *      mount           - pointer to a mounted file system descriptor
+ *      unit            - file system unit number
+ *      block           - logical block # in the range 0 - N
+ *      buf             - buffer containing the data
+ *
+ * Outputs:
+ *
+ *      None
+ *
+ * Returns:
+ *
+ *      1 if successful, 0 otherwise
+ *
+ --*/
+static int sbc6120WriteBlock(
+  struct mountedFS *mount,
+  uint8_t unit,
+  unsigned int block,
+  void *buf
+)
+{
+  int status = 0;
+  unsigned int base = unit * OS8_6120_PART;
+
+  if (block >= OS8_RK05FS_BLKS) {
+    ERROR("Attempt to write block (%u) outside file system \"%s%o:\"\n",
+          block, mount->name, unit);
+    return 0;
+  }
+
+  status = FSioWriteBlock(mount, base + block, buf);
+
+  if (status == 0)
+    ERROR("I/O error on \"%s%o:\"\n", mount->name, unit);
+
+  return status;
+}
+
+/*++
  *      o s 8 B l o c k P r e s e n t
  *
  *  Check if a block is present in the container file.
@@ -939,7 +1069,7 @@ int os8ReadBlock(
   struct OS8data *data = &mount->os8data;
   void *buffer = buf == NULL ? data->buf : buf;
 
-  if ((unit >= data->device->filesys) || ((data->valid & (1 << unit)) == 0)) {
+  if ((data->valid & (1 << unit)) == 0) {
     ERROR("Invalid device \"%s%o:\"\n", mount->name, unit);
     return 0;
   }
@@ -985,7 +1115,7 @@ int os8WriteBlock(
   struct OS8data *data = &mount->os8data;
   void *buffer = buf == NULL ? data->buf : buf;
 
-  if ((unit >= data->device->filesys) || ((data->valid & (1 << unit)) == 0)) {
+  if ((data->valid & (1 << unit)) == 0) {
     ERROR("Invalid device \"%s%o:\"\n", mount->name, unit);
     return 0;
   }
@@ -2279,7 +2409,7 @@ static int os8Mount(
   struct OS8data *data = &mount->os8data;
   struct stat stat;
   uint8_t valid = 0;
-  uint16_t files[8], freeblks[8], extra[8];
+  uint16_t files[OS8_PARTS], freeblks[OS8_PARTS], extra[OS8_PARTS];
 
   memset(files, 0, sizeof(files));
   memset(freeblks, 0, sizeof(freeblks));
@@ -2304,10 +2434,27 @@ static int os8Mount(
           mount->skip = dev->skip;
           data->device = dev;
 
+          if ((data->devices = dev->filesys) == 0) {
+            unsigned int parts;
+
+            parts = stat.st_size / (dev->diskSize * mount->filesys->blocksz);
+
+            /*
+             * Allow for auto extension for short files
+             */
+            if (parts == 0)
+              parts = 1;
+
+            if (parts > OS8_PARTS)
+              parts = OS8_PARTS;
+
+            data->devices = parts;
+          }
+          
           /*
            * Validate all possible file systems.
            */
-          for (i = 0; i < dev->filesys; i++)
+          for (i = 0; i < data->devices; i++)
             if (validate(mount, i, &files[i], &freeblks[i], &extra[i]) != 0) {
               count++;
               valid |= 1 << i;
@@ -2318,7 +2465,7 @@ static int os8Mount(
               printf("%s: successfully mounted (%d file system%s)\n\n",
                      mount->name, count, count == 1 ? "" : "s");
 
-            for (i = 0; i < dev->filesys; i++)
+            for (i = 0; i < data->devices; i++)
               if ((valid & 1 << i) != 0) {
                 printf("%s%o:\n", mount->name, i);
                 printf("  Total Blocks: %4d, Free Blocks: %4d\n"
@@ -2405,13 +2552,13 @@ static size_t os8Size(void)
 /*++
  *      o s 8 N e w f s
  *
- *  Create empty OS/8 file system(s).
+ *  Create empty OS/8 file system(s) container.
  *
  * Inputs:
  *
  *      mount           - pointer to a mounted file system descriptor
  *                        (not in the mounted file system list)
- *      size            - the sized (in blocks) of the filesystem
+ *      size            - the size (in blocks) of the filesystem
  *
  * Outputs:
  *
@@ -2431,6 +2578,7 @@ static int os8Newfs(
   uint16_t extra = 1;
   struct OS8device *dev = OS8Devices;
   uint8_t unit;
+  size_t diskSize;
   uint16_t i;
 
   if (SWISSET('t')) {
@@ -2444,33 +2592,67 @@ static int os8Newfs(
     return 0;
   }
  found:
-  mount->skip = dev->skip;
   data->device = dev;
-
+  mount->skip = dev->skip;
+  diskSize = dev->diskSize;
+  
   if (SWISSET('e')) {
     char *endptr;
+    unsigned long earg = strtoul(SWGETVAL('e'), &endptr, 10);
 
-    extra = strtoul(SWGETVAL('e'), &endptr, 10);
-    if ((extra > 63) || (*endptr != '\0'))
+    if ((earg > 63) || (*endptr != '\0')) {
+      fprintf(stderr, "newfs: -e argument must be numeric in range 0 - 63\n");
       return 0;
+    }
+    extra = earg;
   }
 
-  for (unit = 0; unit < dev->filesys; unit++) {
+  if ((data->devices = dev->filesys) == 0) {
+    uint8_t partitions = 1;
+
+    if (SWISSET('p')) {
+      char *endptr;
+      unsigned long parg = strtoul(SWGETVAL('p'), &endptr, 10);
+      
+      if ((parg == 0) || (parg > 8) || (*endptr != '\0')) {
+        fprintf(stderr, "newfs: -p argument must be numeric in range 1 - 8\n");
+        return 0;
+      }
+      partitions = parg;
+    }
+    data->devices = partitions;
+    diskSize *= partitions;
+  }
+
+  /*
+   * Extend the container file to the maximum size for the specified
+   * device.
+   */
+  if (ftruncate(fileno(mount->container), diskSize * mount->filesys->blocksz) != 0) {
+    fprintf(stderr, "newfs: Unable to extend container file to it's full size\n");
+    return 0;
+  }
+  
+  for (unit = 0; unit < data->devices; unit++) {
     data->valid |= (1 << unit);
 
     for (i = OS8_DSSTART; i <= OS8_DSLAST; i++) {
       uint16_t buf[OS8_BLOCKSIZE];
       uint16_t entries = i == OS8_DSSTART ? 1 : 0;
+      uint16_t dataStart = OS8_DATA;
 
+      if ((unit == 0) && SWISSET('s'))
+        dataStart = OS8_DATAS;
+      
       buf[OS8_DH_ENTRIES] = htole16(os8Value(-entries));
-      buf[OS8_DH_START] = htole16(os8Value(OS8_DATA));
+      buf[OS8_DH_START] = htole16(os8Value(dataStart));
       buf[OS8_DH_NEXT] = htole16(os8Value(0));
       buf[OS8_DH_FLAGWD] = htole16(os8Value(0));
       buf[OS8_DH_EXTRA] = htole16(os8Value(-extra));
 
       buf[OS8_DH_SIZE + OS8_ED_IND] = htole16(os8Value(0));
       buf[OS8_DH_SIZE + OS8_ED_LENGTH] =
-        htole16(os8Value(-(dev->blocks[unit] - OS8_DATA)));
+        htole16(os8Value(-(dev->blocks[unit] - dataStart)));
 
       if (os8WriteBlock(mount, unit, i, buf) == 0)
         return 0;
@@ -2573,7 +2755,6 @@ static void os8Info(
 )
 {
   struct OS8data *data = &mount->os8data;
-  struct OS8device *device = data->device;
 
   if (present) {
     if (os8UnitValid(data, unit))
@@ -2584,7 +2765,7 @@ static void os8Info(
     /*
      * Display information about all valid units
      */
-    for (i = 0; i < device->filesys; i++)
+    for (i = 0; i < data->devices; i++)
       if (os8UnitValid(data, i))
         info(mount, i);
   }

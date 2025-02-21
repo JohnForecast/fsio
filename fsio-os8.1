@@ -1,4 +1,4 @@
-.TH FSIO-OS8 1 "Feb 14,2021" "FFS I/O - OS/8"
+.TH FSIO-OS8 1 "Feb 1,2025" "FFS I/O - OS/8"
 .SH NAME
 fsio-os8 \- Foreign File System I/O - OS/8
 .br
@@ -37,6 +37,9 @@ depending on the type of the device specified:
 .TP
 \fIrx02\fP    \- RX02 image (single file system, 988 blocks)
 .br
+.TP
+\fIsbc6120\fP \- IDE disk image with 2MB partitions (see below)
+.br
 .RE
 
 Note that in order to use RX02 media the OS/8 system must have the device
@@ -49,6 +52,18 @@ available to each directory entry. By default, \fInewfs\fP will create file
 systems with 1 additional information word which will be used to hold the
 file creation date. If you do not want any additional information words
 use "\fI-e 0\fP".
+.br
+
+The "\fI-s\fP" switch will treat the first filesystem on the device as a
+system device reserving blocks 7 - 67 (octal) for OS/8.
+.br
+
+The SBC6120 is a PDP-8 system designed by Bob Armstrong which uses the Harris
+6120 microprocessor. It includes support for an IDE disk with 2MB OS/8
+partitions. In theory, it supports up to 4096 partitions which would fill
+an 8GB disk.
+\fBfsio\fP only supports up to 8 partitions. Use the "\fI-p parts\fP switch
+to specify how many partitions you wish to create (default is 1).
 .br
 .SH SET OPERATION
 The following \fIset\fP commands are supported:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 - 2023 John Forecast. All Rights Reserved.
+ * Copyright (C) 2018 - 2025 John Forecast. All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -328,7 +328,7 @@ struct command {
   { "mount", OPTIONS("fo:rt:x"), 3, 3, 0, doMount },
 #endif
   { "umount", NULL, 1, 1, 0, doUmount },
-  { "newfs", OPTIONS("b:e:i:t:"), 2, 2, 0, doNewfs },
+  { "newfs", OPTIONS("b:e:i:p:st:"), 2, 2, 0, doNewfs },
   { "mkdir", OPTIONS("p"), 1, 1, 0, doMkdir },
   { "set", NULL, 2, MAX_CMDLEN, 0, doSet },
   { "info", NULL, 1, 1, 0, doInfo },

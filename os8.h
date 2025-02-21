@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 - 2023 John Forecast. All Rights Reserved.
+ * Copyright (C) 2019 - 2025 John Forecast. All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -129,6 +129,7 @@
 #define OS8_DSSTART     1               /* Start of directory segments */
 #define OS8_DSLAST      6               /* Last directory segment */
 #define OS8_DATA        7               /* Start of data (non-system device) */
+#define OS8_DATAS       070             /* Start of data (system device) */
 
 #define OS8_DH_ENTRIES  0               /* -(# of entries in segment) */
 #define OS8_DH_START    1               /* Block # for segment start */
@@ -161,6 +162,9 @@
 #define OS8_RX02SS_W    128             /* Word sector size of RX02 floppy */
 #define OS8_RX0xNSECT   26              /* Sectors/track on RX01/RX02 */
 #define OS8_RX0xSZ      2002            /* Sectors on an RX01/RX02 */
+
+#define OS8_6120_PART   4096            /* SBC6120 IDE partition size */
+#define OS8_6120_FSSZ   4095            /* SBC6120 IDE file system size */
 
 /*
  * Structure to describe a filename. Asterisks may be used as wild card
@@ -223,12 +227,13 @@ struct os8OpenFile {
 /*
  * Device descriptor
  */
+#define OS8_PARTS       8               /* Max # of partitiuons supported */
 struct OS8device {
   char                  *name;          /* Device name */
   uint8_t               filesys;        /* # of file systems on device */
   size_t                diskSize;       /* # of blocks on device */
   off_t                 skip;           /* Reserved space at start of disk */
-  uint16_t              blocks[8];      /* File system sizes */
+  uint16_t              blocks[OS8_PARTS]; /* File system sizes */
   int                   (*blockPresent)(struct mountedFS *, uint8_t, unsigned int);
   int                   (*readBlock)(struct mountedFS *, uint8_t, unsigned int, void *);
   int                   (*writeBlock)(struct mountedFS *, uint8_t, unsigned int, void *);

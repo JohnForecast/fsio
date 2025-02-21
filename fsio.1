@@ -1,4 +1,4 @@
-.TH FSIO 1 "Mar 2,2023" "Foreign File System I/O"
+.TH FSIO 1 "Feb 1,2025" "Foreign File System I/O"
 .SH NAME
 fsio \- Foreign File System I/O
 .SH SYNOPSIS
@@ -119,7 +119,7 @@ Remove knowledge of the container file from \fBfsio\fP.
 .RE
 .RE
 .TP
-.B "\fInewfs\fP [-b blks] [-t type] [-e n] [-i n] file type"
+.B "\fInewfs\fP [-b blks] [-t type] [-e n] [-i n] [-p n] [-s] file type"
 Create an new container with an empty file system.
 .br
 .RS
@@ -133,6 +133,10 @@ Create an new container with an empty file system.
 .B "          (RT11, OS/8)"
 .br
 .B "\fI\-i n\fP    \- Specify inode count (8 to 65500) (UnixV7)"
+.br
+.B "\fI\-p n\fP    \- Specify number of partitions to create (OS/8)"
+.br
+.B "\fI-s\fP      \- Create partition 1 as a system partition (OS/8)"
 .br
 .B "\fIfile\fP    \- Name of the container file"
 .br
